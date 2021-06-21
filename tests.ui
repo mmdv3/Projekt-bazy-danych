@@ -1,0 +1,7 @@
+T	DONE	
+	check if run with --init commits its result
+
+
+
+RUN
+./script '{"function":"flight","params":{"id":"12345","airports":[{"airport":"WAW","takeoff_time":"2021-06-01 20:26:44.229109+02"},{"airport":"WRO","takeoff_time":"2021-06-01 21:46:44.22919+02", "landing_time":"2021-06-01 21:26:44.229109+02"}, {"airport":"GDN", "landing_time":"2021-06-01 22:46:44.229109+02"}]}}'
