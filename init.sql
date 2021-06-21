@@ -15,6 +15,7 @@ alter table segment add constraint time_relations CHECK (takeoff_time <= landing
 create sequence if not exists flight_id_sequence;
 
 create or replace function flight (
+  new_flight_id integer,
   airport_1_id varchar(3), 
   airport_2_id varchar(3), 
   takeoff_1_time timestamp with time zone,
@@ -24,10 +25,10 @@ create or replace function flight (
   landing_2_time timestamp with time zone default NULL)
 returns varchar
 as $$
-declare 
-  new_flight_id int;
+--declare 
+  --new_flight_id int;
 begin
-  select nextval('flight_id_sequence') into new_flight_id;
+  --select nextval('flight_id_sequence') into new_flight_id;
   insert into segment(flight_id, takeoff_location, takeoff_time, landing_location, landing_time) 
   values (new_flight_id, airport_1_id, takeoff_1_time, airport_2_id, landing_1_time);
   if (

@@ -1,5 +1,9 @@
 T	DONE	
 	check if run with --init commits its result
+T 	DONE
+	check if flight can add two segment flight
+T	WIP
+	check if flight can add one segment flight
 
 
 

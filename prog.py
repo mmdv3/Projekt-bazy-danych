@@ -12,12 +12,22 @@ if (a == "--init"):
     cur.execute(open("init.sql","r").read())
     conn.commit()
     print("{Status:OK}")
+    
 else:
     a_json = json.loads(a)
+    a_params = a_json["params"]
+
     if a_json["function"] == "flight":
-        #print(a_json["params"]["airports"])
+        a_airports = a_params["airports"]
+
         airport_num = len(a_json["params"]["airports"]) 
+        if airport_num == 3:
+            cur.execute("select flight(%s::integer,%s,%s,%s::timestamptz,%s::timestamptz, %s, %s::timestamptz, %s::timestamptz)", (a_params["id"],a_airports[0]["airport"], a_airports[1]["airport"], a_airports[0]["takeoff_time"],
+                a_airports[1]["landing_time"], a_airports[2]["airport"], a_airports[1]["takeoff_time"], a_airports[2]["landing_time"]))
         if airport_num == 2:
+            cur.execute("select flight(%s::integer,%s,%s,%s::timestamptz,%s::timestamptz, %s, %s::timestamptz, %s::timestamptz)", (a_params["id"],a_airports[0]["airport"], a_airports[1]["airport"], a_airports[0]["takeoff_time"],
+                a_airports[1]["landing_time"]))
+            conn.commit()
 
         #print(airport_num)
         
