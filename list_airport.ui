@@ -1,0 +1,2 @@
+{"function": "list_airport", "params": {"iatacode": "HEA", "n": 3}}
+{"function": "list_airport", "params": {"iatacode": "KTW", "n": 3}}

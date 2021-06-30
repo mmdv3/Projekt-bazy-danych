@@ -143,17 +143,16 @@ language plpgsql;
 
 create or replace function list_flight (cmp_flight_id int) 
 returns table (
-  segment_id int, flight_id int, takeoff_location varchar(3),
-  takeoff_time timestamp with time zone , landing_location varchar(3),
-  landing_time timestamp with time zone,
-  distance int)
+  flight_id int, takeoff_location varchar(3),
+  landing_location varchar(3), 
+  takeoff_time timestamp with time zone) 
 as $$
 begin
   return query
   with ids as (
 	select segment.segment_id from segment
 	where segment.flight_id = cmp_flight_id)
-  select l.*
+  select l.flight_id, l.takeoff_location, l.landing_location, l.takeoff_time 
   from ids,
   lateral list_flights_segment(ids.segment_id) l
   --where segments_with_distance.segment_id != cmp_segment_id
@@ -192,7 +191,7 @@ begin
 	where segment.flight_id = arg_flight_id)
   select l.name, l.prov, l.country
   from flight_segment,
-  lateral list_city_segment(
+  lateral list_cities_segment(
 	flight_segment.takeoff_longitude,
 	flight_segment.takeoff_latitude,
 	flight_segment.landing_longitude,
@@ -247,7 +246,7 @@ flight_parameters as (
 select swl.flight_id, (array_agg(swl.takeoff_time order by swl.distance asc, swl.takeoff_time asc))[1] as takeoff_time, min(swl.distance) as distance
 from segment_with_location swl
 group by swl.flight_id)
-select flight_parameters.flight_id as rid, flight_parameters.distance as mdist
+select flight_parameters.flight_id as rid, round(flight_parameters.distance) as mdist
 from flight_parameters
 where flight_parameters.distance < dist
 order by flight_parameters.takeoff_time desc
@@ -255,3 +254,5 @@ limit n;
 
 end;
 $$ language plpgsql;
+
+select 'OK' as Status;

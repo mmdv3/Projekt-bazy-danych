@@ -1,0 +1,7 @@
+{"function":"flight","params":{"id":"12347","airports":[{"airport":"KTW","takeoff_time":"2021-07-01 20:26:44.229109+02"},{"airport":"POZ", "landing_time":"2021-07-01 21:26:44.229109+02"}]}}
+{"function":"flight","params":{"id":"1","airports":[{"airport":"HEA","takeoff_time":"2021-07-01 20:26:44.229109+02"},{"airport":"KBL", "landing_time":"2021-07-01 21:26:44.229109+02"}]}}
+{"function":"flight","params":{"id":"2","airports":[{"airport":"HEA","takeoff_time":"2021-07-01 20:26:44.229109+02"},{"airport":"TIA", "landing_time":"2021-07-01 21:26:44.229109+02"}]}}
+{"function":"flight","params":{"id":"3","airports":[{"airport":"HEA","takeoff_time":"2021-07-01 20:26:44.229109+02"},{"airport":"TEE", "landing_time":"2021-07-01 21:26:44.229109+02"}]}}
+{"function":"flight","params":{"id":"4","airports":[{"airport":"KBL","takeoff_time":"2021-07-01 20:26:44.229109+02"},{"airport":"TIA", "landing_time":"2021-07-01 21:26:44.229109+02"}]}}
+{"function":"flight","params":{"id":"5","airports":[{"airport":"KBL","takeoff_time":"2021-07-01 20:26:44.229109+02"},{"airport":"TEE", "landing_time":"2021-07-01 21:26:44.229109+02"}]}}
+{"function":"flight","params":{"id":"6","airports":[{"airport":"TIA","takeoff_time":"2021-07-01 20:26:44.229109+02"},{"airport":"TEE", "landing_time":"2021-07-01 21:26:44.229109+02"}]}}
