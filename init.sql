@@ -1,8 +1,13 @@
+create extension if not exists postgis;
+create extension if not exists postgis_topology;
+create extension if not exists fuzzystrmatch;
+create extension if not exists postgis_tiger_geocoder;
+
 drop table if exists segment;
 
 create table segment (
 	segment_id int primary key generated always as identity,
-	flight_id int,
+	flight_id int unique,
 	takeoff_location varchar(3) not null,
   	takeoff_time timestamp with time zone not null,
  	landing_location varchar(3) not null,
@@ -10,9 +15,7 @@ create table segment (
 
 alter table segment add constraint takeoff_fk foreign key (takeoff_location) references airport (iatacode);
 alter table segment add constraint landing_fk foreign key (landing_location) references airport (iatacode);
-alter table segment add constraint time_relations CHECK (takeoff_time <= landing_time);
-
-create sequence if not exists flight_id_sequence;
+alter table segment add constraint time_relations CHECK (takeoff_time < landing_time);
 
 create or replace function flight (
   new_flight_id integer,
@@ -25,10 +28,7 @@ create or replace function flight (
   landing_2_time timestamp with time zone default NULL)
 returns varchar
 as $$
---declare 
-  --new_flight_id int;
 begin
-  --select nextval('flight_id_sequence') into new_flight_id;
   insert into segment(flight_id, takeoff_location, takeoff_time, landing_location, landing_time) 
   values (new_flight_id, airport_1_id, takeoff_1_time, airport_2_id, landing_1_time);
   if (
@@ -45,40 +45,6 @@ end;
 $$
 language plpgsql;
 
---select flight(
---  'HEA', 'KBL',
---  '2011-01-01 00:00:00+03'::timestamptz,
---  '2011-01-01 00:00:01+03'::timestamptz);
---select flight(
---  'KBL', 'TIA',
---  '2011-01-01 00:00:00+03'::timestamptz,
---  '2011-01-01 00:00:01+03'::timestamptz);
---select flight(
---  'TIA', 'TEE',
---  '2011-01-01 00:00:00+03'::timestamptz,
---  '2011-01-01 00:00:01+03'::timestamptz);
---select flight(
---  'TEE', 'HEA',
---  '2011-01-01 00:00:00+03'::timestamptz,
---  '2011-01-01 00:00:01+03'::timestamptz);
---select flight(
---  'HEA', 'TIA',
---  '2011-01-01 00:01:00+03'::timestamptz,
---  '2011-01-01 00:02:01+03'::timestamptz);
---select flight(
---  'KBL', 'TEE',
---  '2011-01-01 00:00:00+03'::timestamptz,
---  '2011-01-01 00:00:01+03'::timestamptz);
---select flight(
---  'BJA', 'TMR',
---  '2011-01-01 00:00:00+03'::timestamptz,
---  '2011-01-01 00:00:01+03'::timestamptz,
---  'CZL',
---  '2011-01-01 00:00:02+03'::timestamptz,
---  '2011-01-01 00:00:03+03'::timestamptz
---  );
-
-
 create or replace function list_flights_segment (
   cmp_segment_id int)
 returns table (
@@ -87,21 +53,7 @@ returns table (
   landing_time timestamp with time zone,
   distance int)
 as $$
---declare 
---  new_flight_id int;
 begin
- -- with cmp_segment_attr as (
- --   select * 
- --   from segment
- --   where segment.segment_id = cmp_segment_id)
- -- select * 
- -- from segment
- -- join airport a_t
- -- on segment.takeoff_location like a_t.iatacode
- -- join airport a_l
- -- on segment.landing_location like a_l.iatacode
-	
---  create temp table segments_with_distance on commit drop as
   return query
 
   select segments_with_distance.segment_id, segments_with_distance.flight_id,
@@ -152,13 +104,12 @@ begin
   with ids as (
 	select segment.segment_id from segment
 	where segment.flight_id = cmp_flight_id)
-  select l.flight_id, l.takeoff_location, l.landing_location, l.takeoff_time 
+  select segment_list.flight_id, segment_list.takeoff_location, segment_list.landing_location, segment_list.takeoff_time 
   from ids,
-  lateral list_flights_segment(ids.segment_id) l
-  --where segments_with_distance.segment_id != cmp_segment_id
-  where l.segment_id not in (select ids.segment_id from ids)
-  and l.distance < 1 --comparing floats with zero is risky
-  ;
+  lateral list_flights_segment(ids.segment_id) segment_list
+  where segment_list.segment_id not in (select ids.segment_id from ids)
+  and segment_list.distance < 1 --comparing floats with zero is risky
+  order by segment_list.takeoff_time desc, segment_list.flight_id asc;
 end;
 $$ language plpgsql;
 
@@ -171,11 +122,9 @@ begin
   (st_distance( ('LINESTRING(' || takeoff_longitude || ' ' || takeoff_latitude || ', ' || landing_longitude || ' ' 
 		  || landing_latitude || ')')::geography, ('POINT(' || city.longitude || ' ' || city.latitude || ')')::geography) )::float
   from city;
-  --limit 10; --temporary , for test
 end;
 $$ language plpgsql;
---, distance float) as $$
--- , min(l.distance)
+
 create or replace function list_cities(arg_flight_id int, dist numeric)
 returns table (name varchar, prov varchar, country varchar) as $$ 
 begin
@@ -202,21 +151,18 @@ begin
 end;
 $$ language plpgsql;
 
-create or replace function list_airport (airport_iatacode varchar(3), -- add limits (n)
+create or replace function list_airport (airport_iatacode varchar(3), 
   n int) returns table (flight_id int) as $$
 begin
   return query
   select segment.flight_id
   from segment
   where segment.takeoff_location like airport_iatacode 
-  order by segment.takeoff_time DESC, segment.flight_id
+  order by segment.takeoff_time DESC, segment.flight_id asc
   limit n;
 end;
 $$ language plpgsql;
 
--- określ długość w typie name, itd.
--- takeoff time w returnie dla debuga
--- w flight_parameters trzeba dostosować kolejność : asc/desc do tego czego będzie chciał ćwiczeniowiec
 create or replace function list_city (a_name varchar, a_prov varchar, 
   a_country varchar, n int, dist int) returns table (rid int, mdist float)
    as $$
@@ -249,7 +195,7 @@ group by swl.flight_id)
 select flight_parameters.flight_id as rid, round(flight_parameters.distance) as mdist
 from flight_parameters
 where flight_parameters.distance < dist
-order by flight_parameters.takeoff_time desc
+order by flight_parameters.takeoff_time desc, flight_parameters.flight_id asc
 limit n;
 
 end;
