@@ -7,7 +7,7 @@ drop table if exists segment;
 
 create table segment (
 	segment_id int primary key generated always as identity,
-	flight_id int unique,
+	flight_id int,
 	takeoff_location varchar(3) not null,
   	takeoff_time timestamp with time zone not null,
  	landing_location varchar(3) not null,
@@ -22,31 +22,19 @@ create or replace function flight (
   airport_1_id varchar(3), 
   airport_2_id varchar(3), 
   takeoff_1_time timestamp with time zone,
-  landing_1_time timestamp with time zone,
-  airport_3_id  varchar(3) default NULL,
-  takeoff_2_time timestamp with time zone default NULL,
-  landing_2_time timestamp with time zone default NULL)
+  landing_1_time timestamp with time zone)
 returns varchar
 as $$
 begin
   insert into segment(flight_id, takeoff_location, takeoff_time, landing_location, landing_time) 
   values (new_flight_id, airport_1_id, takeoff_1_time, airport_2_id, landing_1_time);
-  if (
-	airport_3_id is not null and 
-	takeoff_2_time is not null and
-	landing_2_time is not null
-	) then
-   	insert into segment(flight_id, takeoff_location, takeoff_time, landing_location, landing_time) 
-	values (new_flight_id, airport_2_id, takeoff_2_time, airport_3_id, landing_2_time);
-  end if;
-	
+
   return 'OK';
 end;
 $$
 language plpgsql;
 
-create or replace function list_flights_segment (
-  cmp_segment_id int)
+create or replace function list_flights_segment ( cmp_segment_id int)
 returns table (
   segment_id int, flight_id int, takeoff_location varchar(3),
   takeoff_time timestamp with time zone , landing_location varchar(3),
@@ -85,9 +73,7 @@ select segment.segment_id, segment.flight_id, segment.takeoff_location, segment.
   on segment.takeoff_location like a_t.iatacode
   join airport a_l
   on segment.landing_location like a_l.iatacode
-	) segments_with_distance
-
-;
+	) segments_with_distance ;
 end;
 $$
 language plpgsql;
@@ -104,7 +90,7 @@ begin
   with ids as (
 	select segment.segment_id from segment
 	where segment.flight_id = cmp_flight_id)
-  select segment_list.flight_id, segment_list.takeoff_location, segment_list.landing_location, segment_list.takeoff_time 
+  select distinct segment_list.flight_id, segment_list.takeoff_location, segment_list.landing_location, segment_list.takeoff_time 
   from ids,
   lateral list_flights_segment(ids.segment_id) segment_list
   where segment_list.segment_id not in (select ids.segment_id from ids)

@@ -36,32 +36,22 @@ with open(a, "r") as file:
 
         if a_json["function"] == "flight":
             a_airports = a_params["airports"]
-            airport_num = len(a_json["params"]["airports"]) 
-        
-            if airport_num == 3:
-                cur.execute("""select flight 
-                (%s::integer,%s,%s,%s::timestamptz,%s::timestamptz, 
-                %s, %s::timestamptz, %s::timestamptz)""",
-                (a_params["id"],a_airports[0]["airport"],
-                    a_airports[1]["airport"], a_airports[0]["takeoff_time"],
-                    a_airports[1]["landing_time"], a_airports[2]["airport"],
-                    a_airports[1]["takeoff_time"], a_airports[2]["landing_time"]))
-            if airport_num == 2:
+            num_of_airports = len(a_params["airports"])
+
+            for i in range(0, num_of_airports - 1):
                 cur.execute("""select flight
-                        (%s::integer,%s,%s,%s::timestamptz,%s::timestamptz)""",
-                        (a_params["id"],a_airports[0]["airport"],
-                            a_airports[1]["airport"], a_airports[0]["takeoff_time"],
-                            a_airports[1]["landing_time"]))
-       
+                        (%s::integer,%s::varchar,%s::varchar,%s::timestamptz,%s::timestamptz)""",
+                        (a_params["id"],a_airports[i]["airport"],
+                            a_airports[i+1]["airport"], a_airports[i]["takeoff_time"],
+                            a_airports[i+1]["landing_time"]))
+        
         if a_json["function"] == "list_flights":
-            cur.execute("select list_flight(%s::integer)", a_params["id"])
+            cur.execute("select list_flight(%s::integer)", (a_params["id"],))
             results = cur.fetchall()
 
             for result in results:
                 result = result[0][1:-1].split(',')
-                #result = result[0].split(',')
                 temp_dict = {"rid": result[0], "from": result[1], "to": result[2], "takeoff_time": result[3][1:-1]}
-                #print(temp_dict)
                 data.append(temp_dict)
 
         if a_json["function"] == "list_cities":
